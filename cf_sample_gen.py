@@ -11,34 +11,28 @@ import re
 import argparse
 import platform
 
-language_params = {
-        'c++14' : {
-            'TEMPLATE'    : 'main.cc',
-            'DEBUG_FLAGS' : '-DDEBUG',
-            'COMPILE_CMD' : 'g++ -g -std=c++14 -Wall $DBG',
-            'RUN_CMD'     : './a.out'
-            },
-        }
 
-SAMPLE_INPUT='input'
-SAMPLE_OUTPUT='output'
-MY_OUTPUT='my_output'
+TEMPLATE = 'template.cc'
+SAMPLE_INPUT = 'input'
+SAMPLE_OUTPUT = 'output'
+MY_OUTPUT = 'my_output'
 
-# Do not modify these!
-VERSION='CodeForces Parser v1.5.1: https://github.com/johnathan79717/codeforces-parser'
-RED_F='\033[31m'
-GREEN_F='\033[32m'
-BOLD='\033[1m'
-NORM='\033[0m'
+
+VERSION = 'CodeForces Parser v1.5.1: Modified by Brandon'
+RED_F = '\033[31m'
+GREEN_F = '\033[32m'
+BOLD = '\033[1m'
+NORM = '\033[0m'
+
+
 if (platform.system() == "Darwin"):
-    TIME_CMD='`which gtime` -o time.out -f "(%es)"'
+    TIME_CMD = '`which gtime` -o time.out -f "(%es)"'
 else:
-    TIME_CMD='`which time` -o time.out -f "(%es)"'
-TIME_AP='`cat time.out`'
+    TIME_CMD = '`which time` -o time.out -f "(%es)"'
+TIME_AP = '`cat time.out`'
 
-# Problems parser.
-class CodeforcesProblemParser(HTMLParser):
 
+class codeforces_problem_parser(HTMLParser):
     def __init__(self, folder):
         HTMLParser.__init__(self)
         self.folder = folder
@@ -81,9 +75,8 @@ class CodeforcesProblemParser(HTMLParser):
             self.testcase.write(data.strip('\n').encode('utf-8'))
             self.end_line = False
 
-# Contest parser.
-class CodeforcesContestParser(HTMLParser):
 
+class codeforces_contest_parser(HTMLParser):
     def __init__(self, contest):
         HTMLParser.__init__(self)
         self.contest = contest
@@ -95,7 +88,7 @@ class CodeforcesContestParser(HTMLParser):
         self.problem_names = []
 
     def handle_starttag(self, tag, attrs):
-        if self.name == '' and attrs == [('style', 'color: black'), ('href', '/contest/%s' % (self.contest))]:
+        if self.name == '' and attrs == [('style', 'color: black'), ('href', f'/contest/{self.contest}')]:
                 self.start_contest = True
         elif tag == 'option':
             if len(attrs) == 1:
@@ -120,113 +113,48 @@ class CodeforcesContestParser(HTMLParser):
         elif self.start_problem:
             self.problem_name += data
 
-# Parses each problem page.
+
+
 def parse_problem(folder, contest, problem):
-    url = 'http://codeforces.com/contest/%s/problem/%s' % (contest, problem)
+    url = f'http://codeforces.com/contest/{contest}/problem/{problem}'
     html = urlopen(url).read()
-    parser = CodeforcesProblemParser(folder)
+    parser = codeforces_problem_parser(folder)
     parser.feed(html.decode('utf-8'))
-    # .encode('utf-8') Should fix special chars problems?
     return parser.num_tests
 
-# Parses the contest page.
-def parse_contest(contest):
-    url = 'http://codeforces.com/contest/%s' % (contest)
+
+
+def parse_contest_page(contest):
+    url = f'http://codeforces.com/contest/{contest}'
     html = urlopen(url).read()
-    parser = CodeforcesContestParser(contest)
+    parser = codeforces_contest_parser(contest)
     parser.feed(html.decode('utf-8'))
     return parser
 
-# Generates the test script.
-def generate_test_script(folder, language, num_tests, problem):
-    param = language_params[language]
 
-    with open(folder + 'test.sh', 'w') as test:
-        test.write(
-            ('#!/bin/bash\n'
-            'DBG=""\n'
-            'while getopts ":d" opt; do\n'
-            '  case $opt in\n'
-            '    d)\n'
-            '      echo "-d was selected; compiling in DEBUG mode!" >&2\n'
-            '      DBG=' + param["DEBUG_FLAGS"] +'\n'
-            '      ;;\n'
-            '    \?)\n'
-            '      echo "Invalid option: -$OPTARG" >&2\n'
-            '      ;;\n'
-            '  esac\n'
-            'done\n'
-            '\n'
-            'if ! ' + param["COMPILE_CMD"] +' {0}.{1}; then\n'
-            '    exit\n'
-            'fi\n'
-            'INPUT_NAME='+SAMPLE_INPUT+'\n'
-            'OUTPUT_NAME='+SAMPLE_OUTPUT+'\n'
-            'MY_NAME='+MY_OUTPUT+'\n'
-            'rm -R $MY_NAME* &>/dev/null\n').format(problem, param["TEMPLATE"].split('.')[1]))
-        test.write(
-            'for test_file in $INPUT_NAME*\n'
-            'do\n'
-            '    i=$((${{#INPUT_NAME}}))\n'
-            '    test_case=${{test_file:$i}}\n'
-            '    if ! {5} {run_cmd} < $INPUT_NAME$test_case > $MY_NAME$test_case; then\n'
-            '        echo {1}{4}Sample test \#$test_case: Runtime Error{2} {6}\n'
-            '        echo ========================================\n'
-            '        echo Sample Input \#$test_case\n'
-            '        cat $INPUT_NAME$test_case\n'
-            '    else\n'
-            '        if diff --brief --ignore-space-change $MY_NAME$test_case $OUTPUT_NAME$test_case; then\n'
-            '            echo {1}{3}Sample test \#$test_case: Accepted{2} {6}\n'
-            '        else\n'
-            '            echo {1}{4}Sample test \#$test_case: Wrong Answer{2} {6}\n'
-            '            echo ========================================\n'
-            '            echo Sample Input \#$test_case\n'
-            '            cat $INPUT_NAME$test_case\n'
-            '            echo ========================================\n'
-            '            echo Sample Output \#$test_case\n'
-            '            cat $OUTPUT_NAME$test_case\n'
-            '            echo ========================================\n'
-            '            echo My Output \#$test_case\n'
-            '            cat $MY_NAME$test_case\n'
-            '            echo ========================================\n'
-            '        fi\n'
-            '    fi\n'
-            'done\n'
-            .format(num_tests, BOLD, NORM, GREEN_F, RED_F, TIME_CMD, TIME_AP, run_cmd=param["RUN_CMD"]))
-    call(['chmod', '+x', folder + 'test.sh'])
-
-
-# Main function.
 def main():
-    print (VERSION)
+    def _output_info(contest, language, problems):
+        print(VERSION)
+        print(f'Parsing contest {contest} for language {language}, please wait...')
+        print(f'Found {len(problems)} problems')
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--language', '-l', default="c++14", help="The programming language you want to use "
-            "(c++14, go)")
-    parser.add_argument('contest', help="")
+    parser.add_argument('contest', help='Contest# (Not round#)')
     args = parser.parse_args()
 
     contest = args.contest
-    language = args.language
+    language = 'C++17'
+    content = parse_contest_page(contest)
 
-    # Find contest and problems.
-    print ('Parsing contest %s for language %s, please wait...' % (contest, language))
-    content = parse_contest(contest)
-    print (BOLD+GREEN_F+'*** Round name: '+content.name+' ***'+NORM)
-    print ('Found %d problems!' % (len(content.problems)))
+    _output_info(contest, language, content.problems)
 
-    # Find problems and test cases.
-    TEMPLATE = language_params[language]["TEMPLATE"]
     for index, problem in enumerate(content.problems):
         print ('Downloading Problem %s: %s...' % (problem, content.problem_names[index]))
         folder = '%s-%s/%s/' % (contest, language, problem)
         call(['mkdir', '-p', folder])
         call(['cp', '-n', TEMPLATE, '%s/%s.%s' % (folder, problem, TEMPLATE.split('.')[1])])
         num_tests = parse_problem(folder, contest, problem)
-        print('%d sample test(s) found.' % num_tests)
-        generate_test_script(folder, language, num_tests, problem)
-        print ('========================================')
-
-    print ('Use ./test.sh to run sample tests in each directory.')
+        print(f'{num_tests} sample test(s) found.')
 
 
 if __name__ == '__main__':
