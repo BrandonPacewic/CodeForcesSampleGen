@@ -3,7 +3,6 @@
 from urllib.request import urlopen
 from html.parser import HTMLParser
 
-from sys import argv
 from subprocess import call
 from functools import partial, wraps
 
