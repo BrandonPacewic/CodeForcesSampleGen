@@ -13,7 +13,7 @@ import platform
 
 
 TEMPLATE = 'template.cc'
-LANUGAGE = 'C++17'
+LANGUAGE = 'C++17'
 SAMPLE_INPUT = 'input'
 SAMPLE_OUTPUT = 'output'
 MY_OUTPUT = 'my_output'
