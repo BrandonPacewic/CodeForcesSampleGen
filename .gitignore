@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Other
+1600-c++17/
+1621-C++17/
+211-C++17/
+512-c++17/
