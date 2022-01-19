@@ -25,13 +25,6 @@ BOLD = '\033[1m'
 NORM = '\033[0m'
 
 
-if (platform.system() == "Darwin"):
-    TIME_CMD = '`which gtime` -o time.out -f "(%es)"'
-else:
-    TIME_CMD = '`which time` -o time.out -f "(%es)"'
-TIME_AP = '`cat time.out`'
-
-
 class codeforces_problem_parser(HTMLParser):
     def __init__(self, folder):
         HTMLParser.__init__(self)
