@@ -5,6 +5,7 @@ from html.parser import HTMLParser
 
 from subprocess import call
 from functools import partial, wraps
+from typing import Any, List, Tuple
 
 import re
 import argparse
@@ -12,6 +13,7 @@ import platform
 
 
 TEMPLATE = 'template.cc'
+LANUGAGE = 'C++17'
 SAMPLE_INPUT = 'input'
 SAMPLE_OUTPUT = 'output'
 MY_OUTPUT = 'my_output'
@@ -107,7 +109,7 @@ class codeforces_contest_parser(HTMLParser):
 
 
 
-def parse_problem(folder, contest, problem):
+def parse_problem(folder: str, contest: str, problem: str) -> int:
     url = f'http://codeforces.com/contest/{contest}/problem/{problem}'
     html = urlopen(url).read()
     parser = codeforces_problem_parser(folder)
@@ -116,7 +118,7 @@ def parse_problem(folder, contest, problem):
 
 
 
-def parse_contest_page(contest):
+def parse_contest_page(contest: str) -> Any:
     url = f'http://codeforces.com/contest/{contest}'
     html = urlopen(url).read()
     parser = codeforces_contest_parser(contest)
@@ -125,7 +127,7 @@ def parse_contest_page(contest):
 
 
 def main():
-    def _output_info(contest, language, problems):
+    def _output_info(contest: str, language: str, problems: List[str]) -> None:
         print(VERSION)
         print(f'Parsing contest {contest} for language {language}, please wait...')
         print(f'Found {len(problems)} problems')
@@ -135,14 +137,13 @@ def main():
     args = parser.parse_args()
 
     contest = args.contest
-    language = 'C++17'
     content = parse_contest_page(contest)
 
-    _output_info(contest, language, content.problems)
+    _output_info(contest, LANGUAGE, content.problems)
 
     for index, problem in enumerate(content.problems):
         print ('Downloading Problem %s: %s...' % (problem, content.problem_names[index]))
-        folder = '%s-%s/%s/' % (contest, language, problem)
+        folder = '%s-%s/%s/' % (contest, LANGUAGE, problem)
         call(['mkdir', '-p', folder])
         call(['cp', '-n', TEMPLATE, '%s/%s.%s' % (folder, problem, TEMPLATE.split('.')[1])])
         num_tests = parse_problem(folder, contest, problem)
